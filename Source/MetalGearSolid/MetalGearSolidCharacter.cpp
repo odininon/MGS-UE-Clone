@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #include "MetalGearSolidCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,113 +8,164 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
-
-//////////////////////////////////////////////////////////////////////////
-// AMetalGearSolidCharacter
-
 AMetalGearSolidCharacter::AMetalGearSolidCharacter()
 {
-	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
-	// Don't rotate when the controller rotates. Let that just affect the camera.
+
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
 	GetCharacterMovement()->MaxWalkSpeed = 500.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
-	// Create a camera boom (pulls in towards the player if there is a collision)
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 800.0f; // The camera follows at this distance behind the character	
-	CameraBoom->bUsePawnControlRotation = false; // Rotate the arm based on the controller
-	CameraBoom->bInheritPitch = false;
-	CameraBoom->bInheritRoll = false;
-	CameraBoom->bInheritYaw = false;
+	TiltedCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("TiltedCameraBoom"));
+	TiltedCameraBoom->SetupAttachment(RootComponent);
+	TiltedCameraBoom->TargetArmLength = 800.0f;
+	TiltedCameraBoom->bUsePawnControlRotation = false;
+	TiltedCameraBoom->bInheritPitch = false;
+	TiltedCameraBoom->bInheritRoll = false;
+	TiltedCameraBoom->bInheritYaw = false;
 
-	// Create a follow camera
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
-	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+	TiltedFollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TiltedFollowCamera"));
+	TiltedFollowCamera->SetupAttachment(TiltedCameraBoom, USpringArmComponent::SocketName);
+	TiltedFollowCamera->bUsePawnControlRotation = false;
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	FirstPersonCamera->SetupAttachment(RootComponent);
+	FirstPersonCamera->bUsePawnControlRotation = false;
+
+	TopDownCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("TopDownCameraBoom"));
+	TopDownCameraBoom->SetupAttachment(RootComponent);
+	TopDownCameraBoom->TargetArmLength = 800.0f;
+	TopDownCameraBoom->bUsePawnControlRotation = false;
+	TopDownCameraBoom->bInheritPitch = false;
+	TopDownCameraBoom->bInheritRoll = false;
+	TopDownCameraBoom->bInheritYaw = false;
+
+	TopDownFollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownFollowCamera"));
+	TopDownFollowCamera->SetupAttachment(TopDownCameraBoom, USpringArmComponent::SocketName);
+	TopDownFollowCamera->bUsePawnControlRotation = false;
 }
 
 void AMetalGearSolidCharacter::BeginPlay()
 {
-	// Call the base class  
 	Super::BeginPlay();
 
-	//Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<
+			UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	TiltedFollowCamera->SetActive(true);
+	TopDownFollowCamera->SetActive(false);
+	FirstPersonCamera->SetActive(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
+bool AMetalGearSolidCharacter::IsTiltedCameraObscured() const
+{
+	const auto Start = GetTiltedFollowCamera()->GetComponentLocation();
+	const auto End = GetActorLocation();
+
+	if (FHitResult HitResult; GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility))
+	{
+		return true;
+	}
+
+	return false;
+}
 
 void AMetalGearSolidCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		//Jumping
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
-		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::Move);
 
-		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::Look);
 
+		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Triggered, this,
+		                                   &AMetalGearSolidCharacter::BeginFirstPersonLook);
+		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Completed, this,
+		                                   &AMetalGearSolidCharacter::StopFirstPersonLook);
 	}
-
 }
+
+void AMetalGearSolidCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (bFirstPersonLookPressed)
+	{
+		FirstPersonCamera->SetActive(true);
+		TopDownFollowCamera->SetActive(false);
+		TiltedFollowCamera->SetActive(false);
+	}
+	else
+	{
+		FirstPersonCamera->SetActive(false);
+		if (IsTiltedCameraObscured())
+		{
+			TopDownFollowCamera->SetActive(true);
+			TiltedFollowCamera->SetActive(false);
+		}
+		else
+		{
+			TiltedFollowCamera->SetActive(true);
+			TopDownFollowCamera->SetActive(false);
+		}
+	}
+}
+
 
 void AMetalGearSolidCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
+	const FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
 	{
-		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
-		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
+		if (bFirstPersonLookPressed)
+		{
+			const FRotator OldRootRotation = GetRootComponent()->GetComponentRotation();
+			const FRotator NewRootRotation{OldRootRotation.Pitch, OldRootRotation.Yaw + MovementVector.X * FirstPersonLookTurnSpeed, OldRootRotation.Roll};
+			GetRootComponent()->SetWorldRotation(NewRootRotation);
+
+			const FRotator OldCameraRotation = FirstPersonCamera->GetComponentRotation();
+			const FRotator NewCameraRotation{FMath::Clamp(OldCameraRotation.Pitch + MovementVector.Y * FirstPersonLookTurnSpeed, -45, 45), OldCameraRotation.Yaw, OldCameraRotation.Roll};
+			FirstPersonCamera->SetWorldRotation(NewCameraRotation);
+		}
+		else
+		{
+			const FRotator OldCameraRotation = FirstPersonCamera->GetComponentRotation();
+			const FRotator NewCameraRotation{0, OldCameraRotation.Yaw, OldCameraRotation.Roll};
+			FirstPersonCamera->SetWorldRotation(NewCameraRotation);
+			
+			AddMovementInput(ForwardDirection, MovementVector.Y);
+			AddMovementInput(RightDirection, MovementVector.X);
+		}
 	}
 }
 
 void AMetalGearSolidCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
@@ -127,6 +176,14 @@ void AMetalGearSolidCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void AMetalGearSolidCharacter::BeginFirstPersonLook(const FInputActionValue& Value)
+{
+	GetMesh()->bOwnerNoSee = true;
+	bFirstPersonLookPressed = true;
+}
 
-
-
+void AMetalGearSolidCharacter::StopFirstPersonLook(const FInputActionValue& Value)
+{
+	GetMesh()->bOwnerNoSee = false;
+	bFirstPersonLookPressed = false;
+}
