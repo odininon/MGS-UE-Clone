@@ -89,17 +89,25 @@ void AMetalGearSolidCharacter::SetupPlayerInputComponent(class UInputComponent* 
 {
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::Move);
-
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::Look);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this,
+		                                   &AMetalGearSolidCharacter::BeginMovement);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this,
+		                                   &AMetalGearSolidCharacter::StopMovement);
 
 		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Triggered, this,
 		                                   &AMetalGearSolidCharacter::BeginFirstPersonLook);
 		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Completed, this,
 		                                   &AMetalGearSolidCharacter::StopFirstPersonLook);
+
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this,
+		                                   &AMetalGearSolidCharacter::BeginAiming);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this,
+		                                   &AMetalGearSolidCharacter::StopAiming);
+
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this,
+		                                   &AMetalGearSolidCharacter::BeginCrouching);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this,
+		                                   &AMetalGearSolidCharacter::StopCrouching);
 	}
 }
 
@@ -130,8 +138,9 @@ void AMetalGearSolidCharacter::Tick(float DeltaSeconds)
 }
 
 
-void AMetalGearSolidCharacter::Move(const FInputActionValue& Value)
+void AMetalGearSolidCharacter::BeginMovement(const FInputActionValue& Value)
 {
+	bMovementPressed = true;
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
@@ -145,39 +154,43 @@ void AMetalGearSolidCharacter::Move(const FInputActionValue& Value)
 		if (bFirstPersonLookPressed)
 		{
 			const FRotator OldRootRotation = GetRootComponent()->GetComponentRotation();
-			const FRotator NewRootRotation{OldRootRotation.Pitch, OldRootRotation.Yaw + MovementVector.X * FirstPersonLookTurnSpeed, OldRootRotation.Roll};
+			const FRotator NewRootRotation{
+				OldRootRotation.Pitch, OldRootRotation.Yaw + MovementVector.X, OldRootRotation.Roll
+			};
 			GetRootComponent()->SetWorldRotation(NewRootRotation);
 
 			const FRotator OldCameraRotation = FirstPersonCamera->GetComponentRotation();
-			const FRotator NewCameraRotation{FMath::Clamp(OldCameraRotation.Pitch + MovementVector.Y * FirstPersonLookTurnSpeed, -45, 45), OldCameraRotation.Yaw, OldCameraRotation.Roll};
+			const FRotator NewCameraRotation{
+				FMath::Clamp(OldCameraRotation.Pitch + MovementVector.Y, -45, 45), OldCameraRotation.Yaw,
+				OldCameraRotation.Roll
+			};
 			FirstPersonCamera->SetWorldRotation(NewCameraRotation);
+		}
+		else if (bAimingPressed && !bCrouchingPressed)
+		{
+			const auto NewRotation = FVector{MovementVector.Y, MovementVector.X, 0.f}.Rotation();
+			GetRootComponent()->SetWorldRotation(NewRotation);
 		}
 		else
 		{
-			const FRotator OldCameraRotation = FirstPersonCamera->GetComponentRotation();
-			const FRotator NewCameraRotation{0, OldCameraRotation.Yaw, OldCameraRotation.Roll};
-			FirstPersonCamera->SetWorldRotation(NewCameraRotation);
-			
 			AddMovementInput(ForwardDirection, MovementVector.Y);
 			AddMovementInput(RightDirection, MovementVector.X);
 		}
 	}
 }
 
-void AMetalGearSolidCharacter::Look(const FInputActionValue& Value)
+void AMetalGearSolidCharacter::StopMovement(const FInputActionValue& Value)
 {
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add yaw and pitch input to controller
-		// AddControllerYawInput(LookAxisVector.X);
-		// AddControllerPitchInput(LookAxisVector.Y);
-	}
+	bMovementPressed = false;
 }
 
 void AMetalGearSolidCharacter::BeginFirstPersonLook(const FInputActionValue& Value)
 {
+	if (bAimingPressed)
+	{
+		return;
+	}
+
 	GetMesh()->bOwnerNoSee = true;
 	bFirstPersonLookPressed = true;
 }
@@ -185,5 +198,34 @@ void AMetalGearSolidCharacter::BeginFirstPersonLook(const FInputActionValue& Val
 void AMetalGearSolidCharacter::StopFirstPersonLook(const FInputActionValue& Value)
 {
 	GetMesh()->bOwnerNoSee = false;
+
+	const FRotator OldCameraRotation = FirstPersonCamera->GetComponentRotation();
+	const FRotator NewCameraRotation{0, OldCameraRotation.Yaw, OldCameraRotation.Roll};
+	FirstPersonCamera->SetWorldRotation(NewCameraRotation);
+
 	bFirstPersonLookPressed = false;
+}
+
+void AMetalGearSolidCharacter::BeginAiming(const FInputActionValue& Value)
+{
+	if (bFirstPersonLookPressed)
+	{
+		return;
+	}
+	bAimingPressed = true;
+}
+
+void AMetalGearSolidCharacter::StopAiming(const FInputActionValue& Value)
+{
+	bAimingPressed = false;
+}
+
+void AMetalGearSolidCharacter::BeginCrouching(const FInputActionValue& Value)
+{
+	bCrouchingPressed = true;
+}
+
+void AMetalGearSolidCharacter::StopCrouching(const FInputActionValue& Value)
+{
+	bCrouchingPressed = false;
 }

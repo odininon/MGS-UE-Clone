@@ -30,18 +30,18 @@ class AMetalGearSolidCharacter : public ACharacter
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* JumpAction;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* LookAction;
+	class UInputAction* FirstPersonLookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* FirstPersonLookAction;
+	class UInputAction* AimAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* CrouchAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true", ClampMin = 0.f))
 	float FirstPersonLookTurnSpeed = 0.1f;
@@ -50,20 +50,26 @@ public:
 	AMetalGearSolidCharacter();
 
 	bool bIsCrawling = false;
-	
 	bool bIsCrouching = false;
+
+	bool bMovementPressed = false;
+	bool bCrouchingPressed = false;
 	bool bFirstPersonLookPressed = false;
-	bool bIsAiming = false;
+	bool bAimingPressed = false;
 
 protected:
 	/** Called for movement input */
-	void Move(const FInputActionValue& Value);
-
-	/** Called for looking input */
-	void Look(const FInputActionValue& Value);
-
+	void BeginMovement(const FInputActionValue& Value);
+	void StopMovement(const FInputActionValue& Value);
+	
 	void BeginFirstPersonLook(const FInputActionValue& Value);
 	void StopFirstPersonLook(const FInputActionValue& Value);
+
+	void BeginAiming(const FInputActionValue& Value);
+	void StopAiming(const FInputActionValue& Value);
+
+	void BeginCrouching(const FInputActionValue& Value);
+	void StopCrouching(const FInputActionValue& Value);
 
 protected:
 	// APawn interface
