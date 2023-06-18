@@ -29,10 +29,10 @@ class AMetalGearSolidCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCamera;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
 
@@ -45,10 +45,11 @@ class AMetalGearSolidCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* CrouchAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* WeaponSelectAction;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true", ClampMin = 0.f))
 	float FirstPersonLookTurnSpeed = 0.1f;
-
-
 
 public:
 	AMetalGearSolidCharacter();
@@ -60,12 +61,14 @@ public:
 	bool bCrouchingPressed = false;
 	bool bFirstPersonLookPressed = false;
 	bool bAimingPressed = false;
+	bool bWeaponSelectPressed = false;
 
 protected:
 	/** Called for movement input */
 	void BeginMovement(const FInputActionValue& Value);
+	void TriggeredMovement(const FInputActionValue& Value);
 	void StopMovement(const FInputActionValue& Value);
-	
+
 	void BeginFirstPersonLook(const FInputActionValue& Value);
 	void StopFirstPersonLook(const FInputActionValue& Value);
 
@@ -74,10 +77,13 @@ protected:
 
 	void BeginCrouching(const FInputActionValue& Value);
 	void StopCrouching(const FInputActionValue& Value);
-	
+
+	void BeginWeaponSelect(const FInputActionValue& Value);
+	void StopWeaponSelect(const FInputActionValue& Value);
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
-	
+
 	virtual void BeginPlay();
 
 private:
@@ -86,7 +92,7 @@ private:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory)
 	class UMGSInventoryComponent* InventoryComponent;
-	
+
 	FORCEINLINE class USpringArmComponent* GetTiltedCameraBoom() const { return TiltedCameraBoom; }
 	FORCEINLINE class UCameraComponent* GetTiltedFollowCamera() const { return TiltedFollowCamera; }
 	FORCEINLINE class USpringArmComponent* GetTopDownCameraBoom() const { return TopDownCameraBoom; }

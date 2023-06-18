@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "MGSInventoryComponent.h"
+#include "UI/MGSHud.h"
 
 AMetalGearSolidCharacter::AMetalGearSolidCharacter()
 {
@@ -92,25 +93,21 @@ void AMetalGearSolidCharacter::SetupPlayerInputComponent(class UInputComponent* 
 {
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this,
-		                                   &AMetalGearSolidCharacter::BeginMovement);
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this,
-		                                   &AMetalGearSolidCharacter::StopMovement);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::BeginMovement);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Started, this, &AMetalGearSolidCharacter::TriggeredMovement);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMetalGearSolidCharacter::StopMovement);
 
-		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Triggered, this,
-		                                   &AMetalGearSolidCharacter::BeginFirstPersonLook);
-		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Completed, this,
-		                                   &AMetalGearSolidCharacter::StopFirstPersonLook);
+		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::BeginFirstPersonLook);
+		EnhancedInputComponent->BindAction(FirstPersonLookAction, ETriggerEvent::Completed, this, &AMetalGearSolidCharacter::StopFirstPersonLook);
 
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this,
-		                                   &AMetalGearSolidCharacter::BeginAiming);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this,
-		                                   &AMetalGearSolidCharacter::StopAiming);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::BeginAiming);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AMetalGearSolidCharacter::StopAiming);
 
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this,
-		                                   &AMetalGearSolidCharacter::BeginCrouching);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this,
-		                                   &AMetalGearSolidCharacter::StopCrouching);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &AMetalGearSolidCharacter::BeginCrouching);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AMetalGearSolidCharacter::StopCrouching);
+
+		EnhancedInputComponent->BindAction(WeaponSelectAction, ETriggerEvent::Started, this, &AMetalGearSolidCharacter::BeginWeaponSelect);
+		EnhancedInputComponent->BindAction(WeaponSelectAction, ETriggerEvent::Completed, this, &AMetalGearSolidCharacter::StopWeaponSelect);
 	}
 }
 
@@ -143,6 +140,10 @@ void AMetalGearSolidCharacter::Tick(float DeltaSeconds)
 
 void AMetalGearSolidCharacter::BeginMovement(const FInputActionValue& Value)
 {
+	if (bWeaponSelectPressed)
+	{
+		return;
+	}
 	bMovementPressed = true;
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -179,6 +180,21 @@ void AMetalGearSolidCharacter::BeginMovement(const FInputActionValue& Value)
 			AddMovementInput(ForwardDirection, MovementVector.Y);
 			AddMovementInput(RightDirection, MovementVector.X);
 		}
+	}
+}
+
+void AMetalGearSolidCharacter::TriggeredMovement(const FInputActionValue& Value)
+{
+	if (!bWeaponSelectPressed)
+	{
+		return;
+	}
+
+	const FVector2D MovementVector = Value.Get<FVector2D>();
+
+	if (const AMGSHud* Hud = Cast<AMGSHud>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+	{
+		Hud->WeaponSelectionIndex(FMath::CeilToInt(MovementVector.X));
 	}
 }
 
@@ -231,4 +247,22 @@ void AMetalGearSolidCharacter::BeginCrouching(const FInputActionValue& Value)
 void AMetalGearSolidCharacter::StopCrouching(const FInputActionValue& Value)
 {
 	bCrouchingPressed = false;
+}
+
+void AMetalGearSolidCharacter::BeginWeaponSelect(const FInputActionValue& Value)
+{
+	bWeaponSelectPressed = true;
+	if (const AMGSHud* Hud = Cast<AMGSHud>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+	{
+		Hud->ShowWeaponSelection();
+	}
+}
+
+void AMetalGearSolidCharacter::StopWeaponSelect(const FInputActionValue& Value)
+{
+	bWeaponSelectPressed = false;
+	if (const AMGSHud* Hud = Cast<AMGSHud>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+	{
+		Hud->HideWeaponSelection();
+	}
 }

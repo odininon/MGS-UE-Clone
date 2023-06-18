@@ -21,8 +21,14 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+
 	UPROPERTY(EditDefaultsOnly, Category= Widgets)
 	TSubclassOf<UUserWidget> HudUserWidgetClass;
+
+	void ShowWeaponSelection() const;
+	void HideWeaponSelection() const;
+
+	void WeaponSelectionIndex(int X) const;
 
 private:
 	UPROPERTY()

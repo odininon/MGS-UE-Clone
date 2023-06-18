@@ -18,4 +18,12 @@ public:
 	UMGSHUDUserWidget(const FObjectInitializer& ObjectInitializer);
 
 	virtual void NativeConstruct() override;
+
+
+	UPROPERTY(EditDefaultsOnly, Meta = (BindWidget))
+	class UMGSWeaponSelectionWidget* WeaponSelection;
+
+	void ShowWeaponSelection();
+	void HideWeaponSelection();
+	void WeaponSelectionIndex(int X);
 };
