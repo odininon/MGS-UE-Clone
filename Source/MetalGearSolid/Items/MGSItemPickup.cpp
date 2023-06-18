@@ -3,11 +3,11 @@
 
 #include "MGSItemPickup.h"
 
-#include "MetalGearSolidCharacter.h"
 #include "MGSItem.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
-
+#include "MetalGearSolid/MetalGearSolidCharacter.h"
+#include "MetalGearSolid/MGSInventoryComponent.h"
 
 // Sets default values
 AMGSItemPickup::AMGSItemPickup()
@@ -56,9 +56,17 @@ void AMGSItemPickup::OnTextSphereTriggerEndOverlap(UPrimitiveComponent* Overlapp
 }
 
 void AMGSItemPickup::OnPickupTriggerBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bBFromSweep, const FHitResult& SweepResult)
+                                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bBFromSweep,
+                                                 const FHitResult& SweepResult)
 {
-	Destroy();
+	const AMetalGearSolidCharacter* Character = Cast<AMetalGearSolidCharacter>(OtherActor);
+	if (Character && Item)
+	{
+		if (Character->InventoryComponent->AddItem(Item))
+		{
+			Destroy();
+		}
+	}
 }
 
 // Called every frame

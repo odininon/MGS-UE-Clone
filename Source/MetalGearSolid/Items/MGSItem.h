@@ -17,4 +17,7 @@ class METALGEARSOLID_API UMGSItem : public UObject
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Item)
 	FText ItemDisplayName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Item)
+	class UTexture2D* Thumbnail;
 };

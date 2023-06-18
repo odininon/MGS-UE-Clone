@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Items/MGSItem.h"
+#include "Items/MGSItemPickup.h"
 #include "MetalGearSolidCharacter.generated.h"
 
 
@@ -46,6 +48,8 @@ class AMetalGearSolidCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true", ClampMin = 0.f))
 	float FirstPersonLookTurnSpeed = 0.1f;
 
+
+
 public:
 	AMetalGearSolidCharacter();
 
@@ -70,20 +74,19 @@ protected:
 
 	void BeginCrouching(const FInputActionValue& Value);
 	void StopCrouching(const FInputActionValue& Value);
-
-protected:
-	// APawn interface
+	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	virtual void Tick(float DeltaSeconds) override;
 	
-	// To add mapping context
 	virtual void BeginPlay();
 
 private:
 	bool IsTiltedCameraObscured() const;
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory)
+	class UMGSInventoryComponent* InventoryComponent;
+	
 	FORCEINLINE class USpringArmComponent* GetTiltedCameraBoom() const { return TiltedCameraBoom; }
 	FORCEINLINE class UCameraComponent* GetTiltedFollowCamera() const { return TiltedFollowCamera; }
 	FORCEINLINE class USpringArmComponent* GetTopDownCameraBoom() const { return TopDownCameraBoom; }

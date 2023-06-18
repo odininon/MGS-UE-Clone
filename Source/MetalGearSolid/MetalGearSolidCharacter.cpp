@@ -7,6 +7,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "MGSInventoryComponent.h"
 
 AMetalGearSolidCharacter::AMetalGearSolidCharacter()
 {
@@ -52,6 +53,8 @@ AMetalGearSolidCharacter::AMetalGearSolidCharacter()
 	TopDownFollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownFollowCamera"));
 	TopDownFollowCamera->SetupAttachment(TopDownCameraBoom, USpringArmComponent::SocketName);
 	TopDownFollowCamera->bUsePawnControlRotation = false;
+
+	InventoryComponent = CreateDefaultSubobject<UMGSInventoryComponent>(TEXT("Inventory"));
 }
 
 void AMetalGearSolidCharacter::BeginPlay()
