@@ -22,8 +22,24 @@ public:
 
 	virtual void BeginSelection() override;
 	virtual void EndSelection() override;
+	void SetupItemsSlots();
 	virtual void AddIndex(int X) override;
+
+	TArray<class UMGSWeaponItem*> Items;
+	virtual void SetItems(TArray<class UMGSWeaponItem*> p_Items);;
 
 	UPROPERTY(EditDefaultsOnly, meta= (BindWidget))
 	class UTextBlock* SelectedIndexText;
+
+	UPROPERTY(EditDefaultsOnly, meta= (BindWidget))
+	class UMGSItemWidget* Slot01;
+
+	UPROPERTY(EditDefaultsOnly, meta= (BindWidget))
+	class UMGSItemWidget* Slot02;
+	
+	UPROPERTY(EditDefaultsOnly, meta= (BindWidget))
+	class UMGSItemWidget* Slot03;
+	
+	UPROPERTY(EditDefaultsOnly, meta= (BindWidget))
+	class UMGSItemWidget* Slot04;
 };

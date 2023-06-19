@@ -8,7 +8,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "MGSInventoryComponent.h"
-#include "UI/MGSHud.h"
+#include "MGSPlayerController.h"
+#include "UI/MGSHUDUserWidget.h"
 
 AMetalGearSolidCharacter::AMetalGearSolidCharacter()
 {
@@ -74,6 +75,25 @@ void AMetalGearSolidCharacter::BeginPlay()
 	TiltedFollowCamera->SetActive(true);
 	TopDownFollowCamera->SetActive(false);
 	FirstPersonCamera->SetActive(false);
+
+	if (HudClass)
+	{
+		AMGSPlayerController* PC = GetController<AMGSPlayerController>();
+		Hud = CreateWidget<UMGSHUDUserWidget>(PC, HudClass);
+		Hud->AddToPlayerScreen();
+		Hud->SetInventory(InventoryComponent);
+	}
+}
+
+void AMetalGearSolidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (Hud)
+	{
+		Hud->RemoveFromParent();
+		Hud = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 bool AMetalGearSolidCharacter::IsTiltedCameraObscured() const
@@ -192,7 +212,7 @@ void AMetalGearSolidCharacter::TriggeredMovement(const FInputActionValue& Value)
 
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (const AMGSHud* Hud = Cast<AMGSHud>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+	if (Hud)
 	{
 		Hud->WeaponSelectionIndex(FMath::CeilToInt(MovementVector.X));
 	}
@@ -252,7 +272,7 @@ void AMetalGearSolidCharacter::StopCrouching(const FInputActionValue& Value)
 void AMetalGearSolidCharacter::BeginWeaponSelect(const FInputActionValue& Value)
 {
 	bWeaponSelectPressed = true;
-	if (const AMGSHud* Hud = Cast<AMGSHud>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+	if (Hud)
 	{
 		Hud->ShowWeaponSelection();
 	}
@@ -261,7 +281,7 @@ void AMetalGearSolidCharacter::BeginWeaponSelect(const FInputActionValue& Value)
 void AMetalGearSolidCharacter::StopWeaponSelect(const FInputActionValue& Value)
 {
 	bWeaponSelectPressed = false;
-	if (const AMGSHud* Hud = Cast<AMGSHud>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+	if (Hud)
 	{
 		Hud->HideWeaponSelection();
 	}

@@ -6,7 +6,6 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "Items/MGSItem.h"
-#include "Items/MGSItemPickup.h"
 #include "MetalGearSolidCharacter.generated.h"
 
 
@@ -85,6 +84,7 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 
 	virtual void BeginPlay();
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	bool IsTiltedCameraObscured() const;
@@ -92,6 +92,12 @@ private:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory)
 	class UMGSInventoryComponent* InventoryComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = UI)
+	TSubclassOf<class UMGSHUDUserWidget> HudClass;
+
+	UPROPERTY()
+	class UMGSHUDUserWidget* Hud; 
 
 	FORCEINLINE class USpringArmComponent* GetTiltedCameraBoom() const { return TiltedCameraBoom; }
 	FORCEINLINE class UCameraComponent* GetTiltedFollowCamera() const { return TiltedFollowCamera; }

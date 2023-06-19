@@ -18,12 +18,24 @@ public:
 	UMGSHUDUserWidget(const FObjectInitializer& ObjectInitializer);
 
 	virtual void NativeConstruct() override;
-
+	void SetInventory(class UMGSInventoryComponent* p_InventoryComponent);
 
 	UPROPERTY(EditDefaultsOnly, Meta = (BindWidget))
 	class UMGSWeaponSelectionWidget* WeaponSelection;
 
+	UPROPERTY(EditDefaultsOnly, Meta = (BindWidget))
+	class UMGSItemWidget* SelectedWeapon;
+
+	UPROPERTY(EditDefaultsOnly, Meta = (BindWidget))
+	class UMGSUtilitySelectionWidget* UtilitySelection;
+
+	UPROPERTY(EditDefaultsOnly, Meta = (BindWidget))
+	class UMGSItemWidget* SelectedUtility;
+
 	void ShowWeaponSelection();
 	void HideWeaponSelection();
 	void WeaponSelectionIndex(int X);
+
+	UPROPERTY()
+	class UMGSInventoryComponent* InventoryComponent;
 };

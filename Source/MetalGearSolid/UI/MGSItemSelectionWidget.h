@@ -17,7 +17,7 @@ class METALGEARSOLID_API UMGSItemSelectionWidget : public UUserWidget
 public:
 	UPROPERTY(VisibleAnywhere, Category = Selection)
 	int SelectedIndex = 0;
-
+	
 	virtual void SelectNextIndex();
 	virtual void SelectPreviousIndex();
 

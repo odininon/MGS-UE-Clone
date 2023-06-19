@@ -3,7 +3,6 @@
 #include "MetalGearSolidGameMode.h"
 #include "MetalGearSolidCharacter.h"
 #include "UObject/ConstructorHelpers.h"
-#include "GameFramework/HUD.h"
 
 AMetalGearSolidGameMode::AMetalGearSolidGameMode()
 {
@@ -13,8 +12,8 @@ AMetalGearSolidGameMode::AMetalGearSolidGameMode()
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
 
-	if (static ConstructorHelpers::FClassFinder<AHUD> HudBPClass(TEXT("/Game/MetalGearSolid/UI/BP_MGSHud")); HudBPClass.Class != nullptr)
+	if (static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerBPClass(TEXT("/Game/MetalGearSolid/BP_PlayerController")); PlayerControllerBPClass.Class != nullptr)
 	{
-		HUDClass = HudBPClass.Class;
+		PlayerControllerClass = PlayerControllerBPClass.Class;
 	}
 }
